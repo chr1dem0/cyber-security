@@ -1,150 +1,12 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pentesting Notes</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --bg-primary: #0d0d0d;
-            --bg-secondary: #1a1a1a;
-            --bg-tertiary: #262626;
-            --accent: #ffffff;
-            --accent-dim: #a3a3a3;
-            --text-primary: #ffffff;
-            --text-secondary: #737373;
-            --border: #404040;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            overflow: hidden;
-        }
-
-        .container { display: flex; height: 100vh; }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: 280px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border); }
-        .sidebar-header h1 { font-size: 18px; color: var(--text-primary); font-weight: 600; letter-spacing: -0.5px; }
-
-        .sidebar-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .search-sidebar { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-        .search-sidebar-input {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        .search-sidebar-input:focus { outline: none; border-color: var(--accent-dim); }
-        .search-sidebar-input::placeholder { color: var(--text-secondary); }
-
-        .sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 0; }
-        .nav-section { margin-bottom: 20px; }
-        .nav-section-title { padding: 8px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-secondary); font-weight: 600; }
-        .nav-item {
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: all 0.15s;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-        .nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
-        .nav-item.active { background: var(--bg-tertiary); color: var(--text-primary); border-left: 2px solid var(--accent); font-weight: 500; }
-
-        /* MAIN CONTENT */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary); }
-        .file-viewer { flex: 1; overflow-y: auto; padding: 48px 64px; }
-        .file-content { max-width: 800px; margin: 0 auto; }
-
-        .file-title { font-size: 32px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary); letter-spacing: -0.5px; }
-        .file-meta { color: var(--text-secondary); font-size: 13px; margin-bottom: 40px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-
-        .content h2 { font-size: 24px; margin-top: 40px; margin-bottom: 16px; color: var(--text-primary); font-weight: 600; letter-spacing: -0.3px; }
-        .content h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--accent-dim); font-weight: 600; }
-        .content p, .content ul, .content ol { line-height: 1.7; margin-bottom: 16px; color: var(--text-secondary); font-size: 15px; }
-        .content li { margin-bottom: 10px; line-height: 1.7; font-size: 15px; }
-        .content code { background: var(--bg-secondary); padding: 3px 7px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; color: var(--text-primary); border: 1px solid var(--border); }
-        .content pre { background: var(--bg-secondary); padding: 20px; border-radius: 8px; overflow-x: auto; margin: 24px 0; border: 1px solid var(--border); }
-        .content pre code { background: none; padding: 0; border: none; color: var(--accent-dim); font-size: 14px; line-height: 1.6; }
-        .content blockquote { border-left: 3px solid var(--accent-dim); padding-left: 20px; margin: 24px 0; color: var(--text-secondary); font-style: italic; }
-        .content strong { color: var(--text-primary); font-weight: 600; }
-
-        /* EMPTY STATE */
-        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--text-secondary); padding: 48px; }
-        .empty-state-content h2 { font-size: 24px; color: var(--text-primary); margin-bottom: 12px; }
-        .empty-state-content p { font-size: 15px; color: var(--text-secondary); }
-
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg-primary); }
-        ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 5px; border: 2px solid var(--bg-primary); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--border); }
-
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -280px; z-index: 1000; transition: left 0.3s; height: 100vh; }
-            .sidebar.open { left: 0; }
-            .file-viewer { padding: 24px 20px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h1>PENTESTING NOTES</h1>
-            </div>
-            <div class="sidebar-content">
-                <div class="search-sidebar">
-                    <input type="text" class="search-sidebar-input" id="searchInput" placeholder="Search files...">
-                </div>
-                <nav class="sidebar-nav" id="sidebarNav">
-                    <!-- Files dinamici -->
-                </nav>
-            </div>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-            <div class="file-viewer">
-                <div class="file-content" id="fileContent">
-                    <div class="empty-state">
-                        <div class="empty-state-content">
-                            <h2>Select a file</h2>
-                            <p>Choose a document from the sidebar to view its contents</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
 <script>
 // ELEMENTI
 const sidebarNav = document.getElementById("sidebarNav");
 const searchInput = document.getElementById("searchInput");
 const fileContent = document.getElementById("fileContent");
 
-// CREA EDITOR UNA VOLTA
+let currentFileName = null;
+
+// CREA EDITOR
 const editorWrapper = document.createElement("div");
 editorWrapper.id = "editorWrapper";
 editorWrapper.style.marginBottom = "20px";
@@ -152,7 +14,7 @@ editorWrapper.style.marginBottom = "20px";
 const fileEditor = document.createElement("textarea");
 fileEditor.id = "fileEditor";
 fileEditor.style.width = "100%";
-fileEditor.style.height = "300px";
+fileEditor.style.height = "260px";
 fileEditor.style.padding = "10px";
 fileEditor.style.background = "#1a1a1a";
 fileEditor.style.color = "#fff";
@@ -162,11 +24,10 @@ fileEditor.style.fontFamily = "monospace";
 fileEditor.style.fontSize = "14px";
 
 const saveBtn = document.createElement("button");
-saveBtn.id = "saveBtn";
-saveBtn.textContent = "Aggiorna Anteprima";
+saveBtn.textContent = "💾 Salva file";
 saveBtn.style.marginTop = "10px";
 saveBtn.style.padding = "8px 12px";
-saveBtn.style.background = "#262626";
+saveBtn.style.background = "#008000";
 saveBtn.style.color = "#fff";
 saveBtn.style.border = "1px solid #404040";
 saveBtn.style.borderRadius = "6px";
@@ -176,27 +37,22 @@ editorWrapper.appendChild(fileEditor);
 editorWrapper.appendChild(saveBtn);
 fileContent.appendChild(editorWrapper);
 
-// CREA DIV PER PREVIEW
-const previewDiv = document.createElement("div");
-previewDiv.id = "filePreview";
-previewDiv.className = "content";
-fileContent.appendChild(previewDiv);
+// PREVIEW
+const preview = document.createElement("div");
+preview.id = "filePreview";
+preview.style.marginTop = "20px";
+preview.className = "content";
+fileContent.appendChild(preview);
 
-// CARICA IL JSON CON LA LISTA FILE
+// CARICA LISTA FILE
 fetch("files/pagine.json")
     .then(res => res.json())
-    .then(files => {
-        window.filesList = files;
-        populateSidebar(files);
-    })
-    .catch(err => {
-        console.error("Errore caricamento pagine.json:", err);
-        sidebarNav.innerHTML = "<p style='color:red'>Errore: impossibile caricare pagine.json</p>";
-    });
+    .then(files => populateSidebar(files))
+    .catch(err => console.error("Errore JSON:", err));
 
-// POPOLA LA SIDEBAR
 function populateSidebar(files) {
     sidebarNav.innerHTML = "";
+
     files.forEach(file => {
         const item = document.createElement("div");
         item.className = "nav-item";
@@ -211,33 +67,30 @@ function populateSidebar(files) {
     });
 }
 
-// CARICA FILE EDITABILE
+// CARICA FILE DA MODIFICARE
 function loadEditableFile(path) {
+    currentFileName = path;
+
     fetch("files/" + path)
         .then(res => res.text())
         .then(text => {
-            removeEmptyState();
             fileEditor.value = text;
-            previewDiv.innerHTML = parseCustomMarkup(text);
+            updatePreview();
         })
         .catch(err => {
-            console.error("Errore nel caricamento file:", err);
-            previewDiv.innerHTML = "<h2>Errore</h2><p>Impossibile caricare il file.</p>";
+            console.error(err);
+            preview.innerHTML = "<h2>Errore caricamento file</h2>";
         });
 }
 
-// RIMUOVE EMPTY STATE
-function removeEmptyState() {
-    const empty = fileContent.querySelector(".empty-state");
-    if (empty) empty.remove();
+// AGGIORNA LIVE L’ANTEPRIMA
+fileEditor.addEventListener("input", updatePreview);
+
+function updatePreview() {
+    preview.innerHTML = parseCustomMarkup(fileEditor.value);
 }
 
-// AGGIORNA PREVIEW
-saveBtn.addEventListener("click", () => {
-    previewDiv.innerHTML = parseCustomMarkup(fileEditor.value);
-});
-
-// PARSING CUSTOM MARKUP
+// PARSER MARKUP PERSONALIZZATO
 function parseCustomMarkup(text) {
     const lines = text.split("\n");
     let html = "";
@@ -246,15 +99,19 @@ function parseCustomMarkup(text) {
         line = line.trim();
         if (!line) return;
 
-        if (line.startsWith("**")) { 
-            html += `<h2>${line.replace(/^\*\*/, "").trim()}</h2>`;
-        } else if (line.startsWith("*")) { 
-            html += `<h1>${line.replace(/^\*/, "").trim()}</h1>`;
-        } else if (line.startsWith("§")) { 
-            html += `<pre class="content"><code>${line.replace(/^§/, "").trim()}</code></pre>`;
-        } else if (line === "---") { 
+        if (line.startsWith("**")) {
+            html += `<h2>${line.replace("**", "").trim()}</h2>`;
+        } 
+        else if (line.startsWith("*")) {
+            html += `<h1>${line.replace("*", "").trim()}</h1>`;
+        }
+        else if (line.startsWith("§")) {
+            html += `<pre><code>${line.replace("§", "").trim()}</code></pre>`;
+        }
+        else if (line === "---") {
             html += `<hr>`;
-        } else {
+        }
+        else {
             html += `<p>${line}</p>`;
         }
     });
@@ -262,20 +119,40 @@ function parseCustomMarkup(text) {
     return html;
 }
 
-// EVIDENZIA SELEZIONE
+// SALVA FILE SU GITHUB (tramite server Node.js)
+saveBtn.addEventListener("click", () => {
+    if (!currentFileName) return alert("Nessun file aperto.");
+
+    fetch("http://localhost:3000/save-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            path: currentFileName,
+            content: fileEditor.value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("✔ File salvato su GitHub!");
+        console.log(data);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("❌ Errore durante il salvataggio.");
+    });
+});
+
+// SET ACTIVE
 function setActive(activeItem) {
     document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
     activeItem.classList.add("active");
 }
 
-// RICERCA SIDEBAR
+// SEARCH
 searchInput.addEventListener("input", () => {
-    const query = searchInput.value.toLowerCase();
+    const q = searchInput.value.toLowerCase();
     document.querySelectorAll(".nav-item").forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(query) ? "flex" : "none";
+        item.style.display = item.textContent.toLowerCase().includes(q) ? "flex" : "none";
     });
 });
 </script>
-
-</body>
-</html>
