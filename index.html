@@ -187,47 +187,92 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function parseContent(text) {
-        const lines = text.split("\n");
-        let html = "";
-        let insideCode = false;
+    const lines = text.split("\n");
+    let html = "";
+    let insideCode = false;
+    let insideList = false;
 
-        lines.forEach(line => {
-            line = line.trimEnd();
-            if (line.startsWith("§")) {
-                if (!insideCode) {
-                    html += "<pre><code>";
-                    insideCode = true;
-                } else {
-                    html += "</code></pre>";
-                    insideCode = false;
-                }
-                return;
+    lines.forEach(line => {
+        line = line.trimEnd();
+
+        // Toggle blocco codice
+        if (line.startsWith("§")) {
+            if (!insideCode) {
+                html += "<pre><code>";
+                insideCode = true;
+            } else {
+                html += "</code></pre>";
+                insideCode = false;
             }
-            if (insideCode) {
-                html += line.replace(/</g, "&lt;") + "\n";
-                return;
+            return;
+        }
+
+        if (insideCode) {
+            html += line.replace(/</g, "&lt;") + "\n";
+            return;
+        }
+
+        // Lista puntata
+        if (line.startsWith("-")) {
+            if (!insideList) {
+                html += "<ul>";
+                insideList = true;
             }
-            if (line.startsWith("**")) {
-                html += `<h2>${line.substring(2).trim()}</h2>`;
-                return;
+            let content = line.substring(1).trim();
+            content = parseLinks(content); // trasforma [[...]] in link
+            html += `<li>${content}</li>`;
+            return;
+        } else {
+            if (insideList) {
+                html += "</ul>";
+                insideList = false;
             }
-            if (line.startsWith("*")) {
-                html += `<h1>${line.substring(1).trim()}</h1>`;
-                return;
-            }
-            if (line === "---") {
-                html += "<hr>";
-                return;
-            }
-            if (line.trim() !== "") {
-                html += `<p>${line}</p>`;
-            }
-        });
-        return html;
-    }
-});
+        }
+
+        // H2
+        if (line.startsWith("**")) {
+            html += `<h2>${parseLinks(line.substring(2).trim())}</h2>`;
+            return;
+        }
+
+        // H1
+        if (line.startsWith("*")) {
+            html += `<h1>${parseLinks(line.substring(1).trim())}</h1>`;
+            return;
+        }
+
+        // Linea orizzontale
+        if (line === "---") {
+            html += "<hr>";
+            return;
+        }
+
+        // Paragrafo normale
+        if (line.trim() !== "") {
+            html += `<p>${parseLinks(line.trim())}</p>`;
+        }
+    });
+
+    // Chiude lista se necessario
+    if (insideList) html += "</ul>";
+
+    return html;
+}
+
+// Funzione per trasformare [[nome_file]] in link cliccabile
+function parseLinks(text) {
+    return text.replace(/\[\[(.+?)\]\]/g, (match, p1) => {
+        // Trova il file corrispondente
+        const file = files.find(f => f.name.toLowerCase() === p1.toLowerCase());
+        if (file) {
+            return `<span class="link" style="color:var(--accent); cursor:pointer;" onclick="loadFile('${file.path}'); document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active')); 
+            document.querySelectorAll('.nav-item').forEach(el=>{ if(el.textContent === '${file.name}') el.classList.add('active'); })">${p1}</span>`;
+        } else {
+            return p1; // se non trovato, resta testo normale
+        }
+    });
+}
 
 </script>
-
 </body>
 </html>
