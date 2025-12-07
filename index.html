@@ -127,12 +127,15 @@ body {
     </main>
 </div>
 <script>
-const files = [
-    { name: "Introduction to Cybersecurity", path: "intro-cybersecurity.html" },
-    { name: "Introduction to Pentesting", path: "intro-pentesting.html" },
-    { name: "Passive Reconnaissance", path: "recon-passive.html" },
-    { name: "Active Reconnaissance", path: "recon-active.html" }
-];
+let files = [];
+
+fetch("pentest-workflow/pagine.json")
+    .then(r => r.json())
+    .then(json => {
+        files = json;
+        renderSidebar(files);
+        if (files.length > 0) loadFile(files[0].path, files[0].name);
+    });
 
 const sidebar = document.getElementById("sidebarNav");
 const searchInput = document.getElementById("searchInput");
