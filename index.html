@@ -178,6 +178,8 @@ async function loadFile(path, highlightName=null) {
     }
 }
 
+window.loadFile = loadFile;
+    
 function parseContent(text) {
     const lines = text.split("\n");
     let html = "", insideCode=false, insideList=false;
