@@ -234,5 +234,75 @@
         // Ricerca live
         searchInput.addEventListener('input', (e) => renderFileList(e.target.value));
     </script>
+    <script>
+const sidebarNav = document.getElementById('sidebarNav');
+const fileContent = document.getElementById('fileContent');
+const searchInput = document.getElementById('searchInput');
+
+// Funzione per creare la lista dei file
+function renderSidebar(filter = '') {
+    sidebarNav.innerHTML = '';
+
+    // Raggruppa i file per categoria
+    const categories = {};
+    for (const key in files) {
+        const file = files[key];
+        if (!file.title.toLowerCase().includes(filter.toLowerCase())) continue;
+
+        if (!categories[file.category]) categories[file.category] = [];
+        categories[file.category].push({ key, title: file.title });
+    }
+
+    // Crea HTML per ogni categoria
+    for (const category in categories) {
+        const section = document.createElement('div');
+        section.className = 'nav-section';
+
+        const title = document.createElement('div');
+        title.className = 'nav-section-title';
+        title.textContent = category;
+        section.appendChild(title);
+
+        categories[category].forEach(file => {
+            const item = document.createElement('div');
+            item.className = 'nav-item';
+            item.textContent = file.title;
+            item.dataset.key = file.key;
+
+            // Click per aprire il file
+            item.addEventListener('click', () => {
+                openFile(file.key);
+            });
+
+            section.appendChild(item);
+        });
+
+        sidebarNav.appendChild(section);
+    }
+}
+
+// Funzione per aprire un file
+function openFile(key) {
+    // Rimuove active da tutti
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+    // Imposta active a quello cliccato
+    const activeItem = document.querySelector(`.nav-item[data-key='${key}']`);
+    if (activeItem) activeItem.classList.add('active');
+
+    // Mostra il contenuto
+    fileContent.innerHTML = files[key].content;
+}
+
+// Ricerca
+searchInput.addEventListener('input', () => {
+    const filter = searchInput.value;
+    renderSidebar(filter);
+});
+
+// Inizializza sidebar all'avvio
+renderSidebar();
+</script>
+
 </body>
 </html>
