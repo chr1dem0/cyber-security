@@ -138,71 +138,73 @@
         </main>
     </div>
 
-    const filesList = [
-  { name: 'Introduction to Cybersecurity', path: 'files/intro-cybersecurity.html' },
-  { name: 'Introduction to Pentesting', path: 'files/intro-pentesting.html' },
-  { name: 'Passive Reconnaissance', path: 'files/recon-passive.html' },
-  // aggiungi altri file qui
-];
+<script>
+// ELEMENTI
+const sidebarNav = document.getElementById("sidebarNav");
+const searchInput = document.getElementById("searchInput");
+const fileContent = document.getElementById("fileContent");
 
-const sidebarNav = document.getElementById('sidebarNav');
-const fileContent = document.getElementById('fileContent');
-const searchInput = document.getElementById('searchInput');
-
-// Carica la sidebar
-function loadSidebar(items) {
-    sidebarNav.innerHTML = '';
-    const categories = {};
-    items.forEach(item => {
-        if(!categories[item.category]) categories[item.category] = [];
-        categories[item.category].push(item);
+// CARICA IL JSON CON LA LISTA FILE
+fetch("files/pagine.json")
+    .then(res => res.json())
+    .then(files => {
+        window.filesList = files; 
+        populateSidebar(files);
+    })
+    .catch(err => {
+        console.error("Errore caricamento pagine.json:", err);
+        sidebarNav.innerHTML = "<p style='color:red'>Errore: impossibile caricare pagine.json</p>";
     });
 
-    for(const cat in categories){
-        const section = document.createElement('div');
-        section.className = 'nav-section';
+// POPOLA LA SIDEBAR
+function populateSidebar(files) {
+    sidebarNav.innerHTML = "";
 
-        const title = document.createElement('div');
-        title.className = 'nav-section-title';
-        title.textContent = cat;
-        section.appendChild(title);
+    files.forEach(file => {
+        const item = document.createElement("div");
+        item.className = "nav-item";
+        item.textContent = file.name;
 
-        categories[cat].forEach(file => {
-            const navItem = document.createElement('div');
-            navItem.className = 'nav-item';
-            navItem.textContent = file.name;
-            navItem.addEventListener('click', () => loadFile(file.file, navItem));
-            section.appendChild(navItem);
+        item.addEventListener("click", () => {
+            loadFile(file.path);
+            setActive(item);
         });
 
-        sidebarNav.appendChild(section);
-    }
+        sidebarNav.appendChild(item);
+    });
 }
 
-// Carica un file HTML esterno
-function loadFile(path, navItem){
-    fetch(`files/${path}`)
+// CARICA FILE HTML NEL MAIN
+function loadFile(path) {
+    fetch("files/" + path)
         .then(res => res.text())
-        .then(data => {
-            fileContent.innerHTML = data;
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            navItem.classList.add('active');
+        .then(html => {
+            fileContent.innerHTML = html;
         })
         .catch(err => {
-            fileContent.innerHTML = `<div class="empty-state"><div class="empty-state-content"><h2>Errore</h2><p>Non è stato possibile caricare il file.</p></div></div>`;
-            console.error(err);
+            console.error("Errore nel caricamento file:", err);
+            fileContent.innerHTML = "<h2>Errore</h2><p>Impossibile caricare il file.</p>";
         });
 }
 
-// Ricerca
-searchInput.addEventListener('input', () => {
-    const val = searchInput.value.toLowerCase();
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(val) ? 'flex' : 'none';
+// EVIDENZIA SELEZIONE
+function setActive(activeItem) {
+    document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+    activeItem.classList.add("active");
+}
+
+// RICERCA NELLA SIDEBAR
+searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toLowerCase();
+
+    document.querySelectorAll(".nav-item").forEach(item => {
+        if (item.textContent.toLowerCase().includes(query)) {
+            item.style.display = "flex";
+        } else {
+            item.style.display = "none";
+        }
     });
 });
-
-// Inizializza
-loadSidebar(fileList);
+</script>
 </body>
 </html>
