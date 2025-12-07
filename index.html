@@ -211,6 +211,7 @@ function parseContent(text) {
     lines.forEach(line => {
         line = line.trimEnd();
 
+        // Gestione blocco codice
         if (line.startsWith("§")) {
             html += insideCode ? "</code></pre>" : "<pre><code>";
             insideCode = !insideCode;
@@ -220,11 +221,15 @@ function parseContent(text) {
         if (insideCode) {
             html += line.replace(/</g, "&lt;") + "\n";
             return;
-        } else if (insideList) {
+        }
+
+        // Chiude lista se necessario
+        if (insideList && !line.startsWith("- ")) {
             html += "</ul>";
             insideList = false;
         }
 
+        // Titoli principali
         if (line.startsWith("**")) {
             html += `<h2>${parseLinks(line.substring(2).trim())}</h2>`;
             return;
@@ -240,40 +245,26 @@ function parseContent(text) {
             return;
         }
 
-        if (line.startsWith("- **")) {
-            if (!insideList) {
-                html += "<ul>";
-                insideList = true;
-            }
-        
-            // Cattura il contenuto tra ** … **
-            const match = line.match(/- \*\*(.+?)\*\*(.*)/);
-        
-            if (match) {
-                const title = match[1].trim();
-                const after = match[2].trim();  
-        
-                html += `<li><h2>${parseLinks(title)}</h2>`;
-        
-                if (after.length > 0) {
-                    html += `<p>${parseLinks(after)}</p>`;
-                }
-        
-                html += `</li>`;
-                return;
-            }
-        }
-
-        
+        // Liste
         if (line.startsWith("- ")) {
             if (!insideList) {
                 html += "<ul>";
                 insideList = true;
             }
-            html += `<li>${parseLinks(line.substring(2).trim())}</li>`;
+
+            // Rimuovo il '- ' iniziale
+            let content = line.substring(2).trim();
+
+            // Cattura tutti i grassetti presenti nella riga
+            content = content.replace(/\*\*(.+?)\*\*/g, (match, p1) => {
+                return `<h2>${parseLinks(p1)}</h2>`;
+            });
+
+            html += `<li>${content}</li>`;
             return;
         }
-        
+
+        // Paragrafi normali
         if (line.trim() !== "") {
             html += `<p>${parseLinks(line.trim())}</p>`;
         }
