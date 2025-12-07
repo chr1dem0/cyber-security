@@ -146,27 +146,27 @@ const fileContent = document.getElementById("fileContent");
 
 let currentFileName = null;
 
-// CREO EDITOR UNICO “WORD-LIKE”
-const editor = document.createElement("div");
-editor.id = "inlineEditor";
-editor.contentEditable = true;
+// CREO TEXTAREA EDITOR E PREVIEW
+const editor = document.createElement("textarea");
+editor.id = "fileEditor";
 editor.style.width = "100%";
-editor.style.minHeight = "400px";
-editor.style.padding = "20px";
+editor.style.height = "400px";
 editor.style.background = "#1a1a1a";
 editor.style.color = "#fff";
-editor.style.border = "1px solid #404040";
-editor.style.borderRadius = "6px";
+editor.style.padding = "10px";
 editor.style.fontFamily = "monospace";
 editor.style.fontSize = "14px";
-editor.style.whiteSpace = "pre-wrap";
-editor.style.outline = "none";
-editor.style.overflowY = "auto";
+editor.style.border = "1px solid #404040";
+editor.style.borderRadius = "6px";
+editor.style.marginBottom = "10px";
 
-fileContent.appendChild(editor);
+const preview = document.createElement("div");
+preview.id = "filePreview";
+preview.className = "content";
+preview.style.marginTop = "10px";
 
-// CREO BOTTONI
 const saveBtn = document.createElement("button");
+saveBtn.id = "saveBtn";
 saveBtn.textContent = "💾 Salva file";
 saveBtn.style.marginTop = "10px";
 saveBtn.style.padding = "8px 12px";
@@ -175,30 +175,32 @@ saveBtn.style.color = "#fff";
 saveBtn.style.border = "1px solid #404040";
 saveBtn.style.borderRadius = "6px";
 saveBtn.style.cursor = "pointer";
+
+fileContent.innerHTML = ""; // svuoto contenuto vuoto iniziale
+fileContent.appendChild(editor);
+fileContent.appendChild(preview);
 fileContent.appendChild(saveBtn);
 
-// CREO DIV PER ANTEPRIMA FORMATTATA
-const previewDiv = document.createElement("div");
-previewDiv.id = "previewDiv";
-previewDiv.style.marginTop = "20px";
-fileContent.appendChild(previewDiv);
-
-// CARICA LISTA FILE
+// CARICA IL JSON CON LA LISTA FILE
 fetch("files/pagine.json")
     .then(res => res.json())
     .then(files => populateSidebar(files))
-    .catch(err => console.error("Errore JSON:", err));
+    .catch(err => {
+        console.error("Errore caricamento pagine.json:", err);
+        sidebarNav.innerHTML = "<p style='color:red'>Errore: impossibile caricare pagine.json</p>";
+    });
 
-// POPOLA SIDEBAR
+// POPOLA LA SIDEBAR
 function populateSidebar(files) {
     sidebarNav.innerHTML = "";
+
     files.forEach(file => {
         const item = document.createElement("div");
         item.className = "nav-item";
         item.textContent = file.name;
 
         item.addEventListener("click", () => {
-            loadEditableFile(file.path);
+            loadFile(file.path);
             setActive(item);
         });
 
@@ -206,45 +208,40 @@ function populateSidebar(files) {
     });
 }
 
-// CARICA FILE NELL’EDITOR
-function loadEditableFile(path) {
+// CARICA FILE E METTI NELL’EDITOR
+function loadFile(path) {
     currentFileName = path;
+
     fetch("files/" + path)
         .then(res => res.text())
         .then(text => {
-            editor.innerText = text;       // TESTO PURO
-            updatePreview();               // AGGIORNA ANTEPRIMA
+            editor.value = text;
+            preview.innerHTML = parseCustomMarkup(text);
         })
         .catch(err => {
-            console.error(err);
-            editor.innerText = "Errore caricamento file";
+            console.error("Errore caricamento file:", err);
+            editor.value = "";
+            preview.innerHTML = "<p style='color:red'>Errore caricamento file</p>";
         });
 }
 
-// AGGIORNA ANTEPRIMA FORMATTATA
-function updatePreview() {
-    const rawText = editor.innerText;
-    previewDiv.innerHTML = parseCustomMarkup(rawText);
-}
+// AGGIORNA PREVIEW IN TEMPO REALE
+editor.addEventListener("input", () => {
+    preview.innerHTML = parseCustomMarkup(editor.value);
+});
 
-// PARSER MARKUP PERSONALIZZATO
+// PARSER CUSTOM MARKUP
 function parseCustomMarkup(text) {
-    const lines = text.split("\n");
-    let html = "";
-    lines.forEach(line => {
+    return text.split("\n").map(line => {
         line = line.trim();
-        if (!line) { html += "<br>"; return; }
-        if (line.startsWith("**")) html += `<h2>${line.replace(/^\*\*/, "").trim()}</h2>`;
-        else if (line.startsWith("*")) html += `<h1>${line.replace(/^\*/, "").trim()}</h1>`;
-        else if (line.startsWith("§")) html += `<pre><code>${line.replace(/^§/, "").trim()}</code></pre>`;
-        else if (line === "---") html += "<hr>";
-        else html += `<p>${line}</p>`;
-    });
-    return html;
+        if (!line) return "<br>";
+        if (line.startsWith("**")) return `<h2>${line.replace(/^\*\*/, "").trim()}</h2>`;
+        if (line.startsWith("*")) return `<h1>${line.replace(/^\*/, "").trim()}</h1>`;
+        if (line.startsWith("§")) return `<pre><code>${line.replace(/^§/, "").trim()}</code></pre>`;
+        if (line === "---") return "<hr>";
+        return `<p>${line}</p>`;
+    }).join("");
 }
-
-// AGGIORNA IN TEMPO REALE
-editor.addEventListener("input", updatePreview);
 
 // SALVA FILE SU SERVER
 saveBtn.addEventListener("click", () => {
@@ -255,7 +252,7 @@ saveBtn.addEventListener("click", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             path: currentFileName,
-            content: editor.innerText
+            content: editor.value
         })
     })
     .then(res => res.json())
@@ -263,20 +260,21 @@ saveBtn.addEventListener("click", () => {
     .catch(err => alert("❌ Errore salvataggio."));
 });
 
-// SET ACTIVE
+// EVIDENZIA FILE SELEZIONATO
 function setActive(activeItem) {
     document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
     activeItem.classList.add("active");
 }
 
-// SEARCH
+// FILTRA FILES
 searchInput.addEventListener("input", () => {
-    const q = searchInput.value.toLowerCase();
+    const query = searchInput.value.toLowerCase();
     document.querySelectorAll(".nav-item").forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(q) ? "flex" : "none";
+        item.style.display = item.textContent.toLowerCase().includes(query) ? "flex" : "none";
     });
 });
 </script>
+
 
 
 
