@@ -133,26 +133,31 @@ const sidebar = document.getElementById("sidebarNav");
 const searchInput = document.getElementById("searchInput");
 const fileContent = document.getElementById("fileContent");
 
+// Carica il JSON dei file
 fetch("pentest-workflow/pagine.json")
     .then(r => r.json())
     .then(json => {
         files = json;
 
+        // Popola la sidebar
         renderSidebar(files);
 
+        // Mostra automaticamente il primo file
         if (files.length > 0) loadFile(files[0].path, files[0].name);
 
+        // Aggiunge il listener per la ricerca
         searchInput.addEventListener("input", () => {
             const q = searchInput.value.toLowerCase();
             const filtered = files.filter(f => f.name.toLowerCase().includes(q));
             renderSidebar(filtered);
         });
+    })
+    .catch(err => {
+        console.error("Errore caricando pagine.json:", err);
+        sidebar.innerHTML = `<p style="color:red; padding: 10px;">Impossibile caricare la lista dei file</p>`;
     });
 
-const sidebar = document.getElementById("sidebarNav");
-const searchInput = document.getElementById("searchInput");
-const fileContent = document.getElementById("fileContent");
-
+// Funzione per generare la sidebar
 function renderSidebar(listFiles) {
     sidebar.innerHTML = "";
     listFiles.forEach(f => {
@@ -164,13 +169,14 @@ function renderSidebar(listFiles) {
     });
 }
 
+// Funzione per caricare un file
 async function loadFile(path, highlightName = null) {
     try {
         const response = await fetch("pentest-workflow/" + path);
         const text = await response.text();
         fileContent.innerHTML = `<div class="content">${parseContent(text)}</div>`;
 
-        // Evidenzia la voce attiva in sidebar
+        // Evidenzia il file selezionato
         document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
         if (highlightName) {
             const el = Array.from(document.querySelectorAll(".nav-item"))
@@ -182,6 +188,7 @@ async function loadFile(path, highlightName = null) {
     }
 }
 
+// Funzione per trasformare [[link]] in span cliccabili
 function parseLinks(text) {
     return text.replace(/\[\[(.+?)\]\]/g, (match, p1) => {
         const file = files.find(f => f.name.toLowerCase() === p1.toLowerCase() || f.path.toLowerCase() === p1.toLowerCase());
@@ -194,6 +201,7 @@ function parseLinks(text) {
 
 window.loadFile = loadFile;
 
+// Funzione per trasformare il testo in HTML leggibile
 function parseContent(text) {
     const lines = text.split("\n");
     let html = "";
@@ -250,19 +258,6 @@ function parseContent(text) {
 
     return html;
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    renderSidebar(files);
-
-    searchInput.addEventListener("input", () => {
-        const q = searchInput.value.toLowerCase();
-        const filtered = files.filter(f => f.name.toLowerCase().includes(q));
-        renderSidebar(filtered);
-    });
-
-    // Mostra automaticamente il primo file all'avvio
-    if (files.length > 0) loadFile(files[0].path, files[0].name);
-});
 </script>
 
 </body>
