@@ -139,144 +139,88 @@
     </div>
 
 <script>
-// ELEMENTI
-const sidebarNav = document.getElementById("sidebarNav");
-const searchInput = document.getElementById("searchInput");
-const fileContent = document.getElementById("fileContent");
+document.addEventListener("DOMContentLoaded", () => {
+    const editor = document.getElementById("editor");
+    const preview = document.getElementById("preview");
+    const saveBtn = document.getElementById("saveFile");
 
-let currentFileName = null;
+    // Funzione che converte il testo in HTML formattato
+    function parseContent(text) {
+        const lines = text.split("\n");
+        let html = "";
+        let insideCode = false;
 
-// CREO TEXTAREA EDITOR E PREVIEW
-const editor = document.createElement("textarea");
-editor.id = "fileEditor";
-editor.style.width = "100%";
-editor.style.height = "400px";
-editor.style.background = "#1a1a1a";
-editor.style.color = "#fff";
-editor.style.padding = "10px";
-editor.style.fontFamily = "monospace";
-editor.style.fontSize = "14px";
-editor.style.border = "1px solid #404040";
-editor.style.borderRadius = "6px";
-editor.style.marginBottom = "10px";
+        lines.forEach(line => {
+            line = line.trimEnd();
 
-const preview = document.createElement("div");
-preview.id = "filePreview";
-preview.className = "content";
-preview.style.marginTop = "10px";
+            // Blocchi di codice
+            if (line.startsWith("§")) {
+                if (!insideCode) {
+                    html += "<pre><code>";
+                    insideCode = true;
+                } else {
+                    html += "</code></pre>";
+                    insideCode = false;
+                }
+                return;
+            }
 
-const saveBtn = document.createElement("button");
-saveBtn.id = "saveBtn";
-saveBtn.textContent = "💾 Salva file";
-saveBtn.style.marginTop = "10px";
-saveBtn.style.padding = "8px 12px";
-saveBtn.style.background = "#008000";
-saveBtn.style.color = "#fff";
-saveBtn.style.border = "1px solid #404040";
-saveBtn.style.borderRadius = "6px";
-saveBtn.style.cursor = "pointer";
+            if (insideCode) {
+                html += line.replace(/</g, "&lt;") + "\n";
+                return;
+            }
 
-fileContent.innerHTML = ""; // svuoto contenuto vuoto iniziale
-fileContent.appendChild(editor);
-fileContent.appendChild(preview);
-fileContent.appendChild(saveBtn);
+            // TITOLI
+            if (line.startsWith("**")) {
+                html += `<h2>${line.substring(2).trim()}</h2>`;
+                return;
+            }
 
-// CARICA IL JSON CON LA LISTA FILE
-fetch("files/pagine.json")
-    .then(res => res.json())
-    .then(files => populateSidebar(files))
-    .catch(err => {
-        console.error("Errore caricamento pagine.json:", err);
-        sidebarNav.innerHTML = "<p style='color:red'>Errore: impossibile caricare pagine.json</p>";
-    });
+            if (line.startsWith("*")) {
+                html += `<h1>${line.substring(1).trim()}</h1>`;
+                return;
+            }
 
-// POPOLA LA SIDEBAR
-function populateSidebar(files) {
-    sidebarNav.innerHTML = "";
+            // LINEA
+            if (line === "---") {
+                html += "<hr>";
+                return;
+            }
 
-    files.forEach(file => {
-        const item = document.createElement("div");
-        item.className = "nav-item";
-        item.textContent = file.name;
-
-        item.addEventListener("click", () => {
-            loadFile(file.path);
-            setActive(item);
+            // Paragrafo
+            if (line.trim() !== "") {
+                html += `<p>${line}</p>`;
+            }
         });
 
-        sidebarNav.appendChild(item);
+        return html;
+    }
+
+    // Aggiorna l’anteprima mentre scrivi
+    editor.addEventListener("input", () => {
+        preview.innerHTML = parseContent(editor.innerText);
     });
-}
 
-// CARICA FILE E METTI NELL’EDITOR
-function loadFile(path) {
-    currentFileName = path;
+    // Bottone "Salva file"
+    saveBtn.addEventListener("click", async () => {
+        const rawText = editor.innerText;
+        const htmlReady = parseContent(rawText);
 
-    fetch("files/" + path)
-        .then(res => res.text())
-        .then(text => {
-            editor.value = text;
-            preview.innerHTML = parseCustomMarkup(text);
-        })
-        .catch(err => {
-            console.error("Errore caricamento file:", err);
-            editor.value = "";
-            preview.innerHTML = "<p style='color:red'>Errore caricamento file</p>";
+        const filename = document.getElementById("currentFile").dataset.filename;
+
+        await fetch("/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                filename: filename,
+                content: rawText,     // salva anche il testo grezzo
+                rendered: htmlReady   // salva anche l'HTML già pronto
+            })
         });
-}
 
-// AGGIORNA PREVIEW IN TEMPO REALE
-editor.addEventListener("input", () => {
-    preview.innerHTML = parseCustomMarkup(editor.value);
-});
-
-// PARSER CUSTOM MARKUP
-function parseCustomMarkup(text) {
-    return text.split("\n").map(line => {
-        line = line.trim();
-        if (!line) return "<br>";
-        if (line.startsWith("**")) return `<h2>${line.replace(/^\*\*/, "").trim()}</h2>`;
-        if (line.startsWith("*")) return `<h1>${line.replace(/^\*/, "").trim()}</h1>`;
-        if (line.startsWith("§")) return `<pre><code>${line.replace(/^§/, "").trim()}</code></pre>`;
-        if (line === "---") return "<hr>";
-        return `<p>${line}</p>`;
-    }).join("");
-}
-
-// SALVA FILE SU SERVER
-saveBtn.addEventListener("click", () => {
-    if (!currentFileName) return alert("Apri prima un file.");
-
-    fetch("http://localhost:3000/save-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            path: currentFileName,
-            content: editor.value
-        })
-    })
-    .then(res => res.json())
-    .then(data => alert("✔ File salvato!"))
-    .catch(err => alert("❌ Errore salvataggio."));
-});
-
-// EVIDENZIA FILE SELEZIONATO
-function setActive(activeItem) {
-    document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
-    activeItem.classList.add("active");
-}
-
-// FILTRA FILES
-searchInput.addEventListener("input", () => {
-    const query = searchInput.value.toLowerCase();
-    document.querySelectorAll(".nav-item").forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(query) ? "flex" : "none";
+        alert("File salvato con successo!");
     });
 });
 </script>
-
-
-
-
 </body>
 </html>
