@@ -145,11 +145,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileContent = document.getElementById("fileContent");
 
     const files = [
-        { "name": "Introduction to Cybersecurity", "path": "intro-cybersecurity.html" },
-        { "name": "Introduction to Pentesting", "path": "intro-pentesting.html" },
-        { "name": "Passive Reconnaissance", "path": "recon-passive.html" },
-        { "name": "Active Reconnaissance", "path": "recon-active.html" }
-    ];
+    { "name": "Introduction to Cybersecurity", "path": "intro-cybersecurity.html" },
+    { "name": "Introduction to Pentesting", "path": "intro-pentesting.html" },
+    { "name": "Passive Reconnaissance", "path": "recon-passive.html" },
+    { "name": "Active Reconnaissance", "path": "recon-active.html" }
+];
+
+document.addEventListener("DOMContentLoaded", () => {
+    const sidebar = document.getElementById("sidebarNav");
+    const searchInput = document.getElementById("searchInput");
+    const fileContent = document.getElementById("fileContent");
 
     renderSidebar(files);
 
@@ -159,14 +164,13 @@ document.addEventListener("DOMContentLoaded", () => {
         renderSidebar(filtered);
     });
 
-    function renderSidebar(files) {
+    function renderSidebar(filesToRender) {
         sidebar.innerHTML = "";
-        files.forEach(f => {
+        filesToRender.forEach(f => {
             const item = document.createElement("div");
             item.className = "nav-item";
             item.textContent = f.name;
             item.onclick = () => {
-                // Rimuove active dagli altri
                 document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
                 item.classList.add("active");
                 loadFile(f.path);
