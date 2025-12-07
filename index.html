@@ -240,21 +240,21 @@ function parseContent(text) {
             return;
         }
 
-        if (line.startsWith("- ")) {
-            if (!insideList) {
-                html += "<ul>";
-                insideList = true;
-            }
-            html += `<li>${parseLinks(line.substring(2).trim())}</li>`;
-            return;
-        }
-
         if (line.startsWith("- **")) {
             if (!insideList) {
                 html += "<ul>";
                 insideList = true;
             }
             html += `<li><h2>${parseLinks(line.substring(2).trim())}</h2></li>`;
+            return;
+        }
+        
+        if (line.startsWith("- ")) {
+            if (!insideList) {
+                html += "<ul>";
+                insideList = true;
+            }
+            html += `<li>${parseLinks(line.substring(2).trim())}</li>`;
             return;
         }
         
