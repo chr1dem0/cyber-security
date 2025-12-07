@@ -144,11 +144,43 @@ const sidebarNav = document.getElementById("sidebarNav");
 const searchInput = document.getElementById("searchInput");
 const fileContent = document.getElementById("fileContent");
 
+// CREO TEXTAREA PER EDITOR
+const editorWrapper = document.createElement("div");
+editorWrapper.id = "editorWrapper";
+editorWrapper.style.marginBottom = "20px";
+
+const fileEditor = document.createElement("textarea");
+fileEditor.id = "fileEditor";
+fileEditor.style.width = "100%";
+fileEditor.style.height = "300px";
+fileEditor.style.padding = "10px";
+fileEditor.style.background = "#1a1a1a";
+fileEditor.style.color = "#fff";
+fileEditor.style.border = "1px solid #404040";
+fileEditor.style.borderRadius = "6px";
+fileEditor.style.fontFamily = "monospace";
+fileEditor.style.fontSize = "14px";
+
+const saveBtn = document.createElement("button");
+saveBtn.id = "saveBtn";
+saveBtn.textContent = "Aggiorna Anteprima";
+saveBtn.style.marginTop = "10px";
+saveBtn.style.padding = "8px 12px";
+saveBtn.style.background = "#262626";
+saveBtn.style.color = "#fff";
+saveBtn.style.border = "1px solid #404040";
+saveBtn.style.borderRadius = "6px";
+saveBtn.style.cursor = "pointer";
+
+editorWrapper.appendChild(fileEditor);
+editorWrapper.appendChild(saveBtn);
+fileContent.appendChild(editorWrapper);
+
 // CARICA IL JSON CON LA LISTA FILE
-fetch("/cyber-security/files/pagine.json")
+fetch("files/pagine.json")
     .then(res => res.json())
     .then(files => {
-        window.filesList = files; 
+        window.filesList = files;
         populateSidebar(files);
     })
     .catch(err => {
@@ -166,7 +198,7 @@ function populateSidebar(files) {
         item.textContent = file.name;
 
         item.addEventListener("click", () => {
-            loadFile(file.path);
+            loadEditableFile(file.path);
             setActive(item);
         });
 
@@ -174,17 +206,65 @@ function populateSidebar(files) {
     });
 }
 
-// CARICA FILE HTML NEL MAIN
-function loadFile(path) {
+// CARICA FILE EDITABILE
+function loadEditableFile(path) {
     fetch("files/" + path)
         .then(res => res.text())
-        .then(html => {
-            fileContent.innerHTML = html;
+        .then(text => {
+            fileEditor.value = text;
+            fileContentDisplay(parseCustomMarkup(text));
         })
         .catch(err => {
             console.error("Errore nel caricamento file:", err);
-            fileContent.innerHTML = "<h2>Errore</h2><p>Impossibile caricare il file.</p>";
+            fileContentDisplay("<h2>Errore</h2><p>Impossibile caricare il file.</p>");
         });
+}
+
+// AGGIORNA ANTEPRIMA
+saveBtn.addEventListener("click", () => {
+    const text = fileEditor.value;
+    fileContentDisplay(parseCustomMarkup(text));
+});
+
+// FUNZIONE PER MOSTRARE IL CONTENUTO NEL FILE-CONTENT
+function fileContentDisplay(html) {
+    // Rimuovo editorWrapper se presente (per evitare duplicazioni)
+    const existingEditor = document.getElementById("editorWrapper");
+    if (!existingEditor) fileContent.innerHTML = "";
+    // Inserisco il contenuto trasformato
+    let preview = document.getElementById("filePreview");
+    if (!preview) {
+        preview = document.createElement("div");
+        preview.id = "filePreview";
+        preview.className = "content";
+        fileContent.appendChild(preview);
+    }
+    preview.innerHTML = html;
+}
+
+// FUNZIONE DI PARSING CUSTOM MARKUP
+function parseCustomMarkup(text) {
+    const lines = text.split("\n");
+    let html = "";
+
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+
+        if (line.startsWith("**")) { // **Titolo -> h2
+            html += `<h2>${line.replace(/^\*\*/, "").trim()}</h2>`;
+        } else if (line.startsWith("*")) { // *Titolo -> h1
+            html += `<h1>${line.replace(/^\*/, "").trim()}</h1>`;
+        } else if (line.startsWith("§")) { // § -> riquadro
+            html += `<pre class="content"><code>${line.replace(/^§/, "").trim()}</code></pre>`;
+        } else if (line === "---") { // --- -> separatore
+            html += `<hr>`;
+        } else {
+            html += `<p>${line}</p>`;
+        }
+    });
+
+    return html;
 }
 
 // EVIDENZIA SELEZIONE
